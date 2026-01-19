@@ -15,6 +15,8 @@
     "test:e2e": "ts-node --project tsconfig.json ./tests/run-e2e.ts",
     "test:all": "ts-node --project tsconfig.json ./tests/run-all.ts",
     "example:getting-started": "ts-node examples/getting-started.ts",
+    "example:openai": "ts-node examples/openai-usage.ts",
+    "example:gemini": "ts-node examples/gemini-usage.ts",
     "example:agent-inbox": "ts-node examples/01-agent-inbox.ts",
     "example:approval": "ts-node examples/02-approval-control.ts",
     "example:room": "ts-node examples/03-room-collab.ts",
@@ -38,12 +40,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.19.1",
+    "@modelcontextprotocol/sdk": "~1.22.0",
     "ajv": "^8.17.1",
     "dotenv": "^16.4.5",
     "fast-glob": "^3.3.2",
-    "zod": "^4.3.5",
-    "zod-to-json-schema": "^3.24.6"
+    "undici": "^7.18.2",
+    "zod": "~3.23.8",
+    "zod-to-json-schema": "~3.23.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

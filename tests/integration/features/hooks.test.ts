@@ -1,6 +1,7 @@
 import { collectEvents } from '../../helpers/setup';
 import { TestRunner, expect } from '../../helpers/utils';
 import { tool, EnhancedToolContext } from '../../../src/tools/tool';
+import fs from 'fs';
 import { z } from 'zod';
 import { ModelResponse } from '../../../src/infra/provider';
 import { ContentBlock, ToolOutcome } from '../../../src/core/types';
@@ -213,6 +214,17 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
       });
     },
   });
+  const workDir = harness.getWorkDir();
+  expect.toBeTruthy(workDir);
+  const createdSandboxes = new Set<any>();
+  const deps = harness.getDependencies();
+  const originalSandboxCreate = deps.sandboxFactory.create.bind(deps.sandboxFactory);
+  deps.sandboxFactory.create = (config: any) => {
+    const sandbox = originalSandboxCreate(config);
+    createdSandboxes.add(sandbox);
+    return sandbox;
+  };
+  createdSandboxes.add((harness.getAgent() as any).sandbox);
 
   const firstPrompt = '阶段1: 请先调用 hook_probe 工具记录 "phase-1", 然后用一句话说明你准备如何协助测试。';
   const phase1 = await harness.chatStep({
@@ -227,10 +239,13 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
   console.log('\n[阶段1] progress 事件数量:', phase1.events.filter((e) => e.channel === 'progress').length);
   console.log('[阶段1] monitor 事件数量:', phase1.events.filter((e) => e.channel === 'monitor').length);
 
+  const phase1NotePath = `${workDir}/phase1-summary.txt`;
+  fs.writeFileSync(phase1NotePath, `阶段1对话摘要:\n${phase1.reply.text || ''}\n`);
+
   const subTaskResult1 = await harness.delegateTask({
     label: '阶段1-子代理',
     templateId: subAgentTemplate.id,
-    prompt: '请总结阶段1的交流内容，回答两句话。',
+    prompt: `请先使用 fs_read 读取 ${phase1NotePath}（不要读取目录），然后用两句话总结内容。`,
     tools: subAgentTemplate.tools,
   });
   console.log('[阶段1] 子代理任务结果:', subTaskResult1.text);
@@ -239,7 +254,14 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
   currentStage = '阶段2-Resume';
 
   await harness.resume('阶段2');
-  const secondPrompt = '阶段2: 在继续对话前再次调用 hook_probe 记录 "phase-2", 并说明子代理刚刚给出的总结内容。';
+  const secondPrompt = [
+    '阶段2: 在继续对话前再次调用 hook_probe 记录 "phase-2"。',
+    '子代理刚刚给出的总结如下：',
+    '<<<',
+    subTaskResult1.text || '(空)',
+    '>>>',
+    '请直接复述上述总结内容，不要调用任何工具，也不要委派子代理。',
+  ].join('\n');
   const phase2 = await harness.chatStep({
     label: '阶段2',
     prompt: secondPrompt,
@@ -252,10 +274,13 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
   console.log('\n[阶段2] progress 事件数量:', phase2.events.filter((e) => e.channel === 'progress').length);
   console.log('[阶段2] monitor 事件数量:', phase2.events.filter((e) => e.channel === 'monitor').length);
 
+  const phase2NotePath = `${workDir}/phase2-summary.txt`;
+  fs.writeFileSync(phase2NotePath, `阶段2对话摘要:\n${phase2.reply.text || ''}\n`);
+
   const subTaskResult2 = await harness.delegateTask({
     label: '阶段2-子代理',
     templateId: subAgentTemplate.id,
-    prompt: '请再次总结当前对话，确保提到阶段2的要求。',
+    prompt: `请先使用 fs_read 读取 ${phase2NotePath}（不要读取目录），然后用两句话总结内容并提到阶段2。`,
     tools: subAgentTemplate.tools,
   });
   console.log('[阶段2] 子代理任务结果:', subTaskResult2.text);
@@ -300,6 +325,9 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
     )
   );
 
+  for (const sandbox of createdSandboxes) {
+    await sandbox?.dispose?.();
+  }
   await harness.cleanup();
 });
 
