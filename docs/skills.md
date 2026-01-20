@@ -364,14 +364,14 @@ Agent: [检测到需要日志分析技能]
 
 ```typescript
 // 监听技能工具调用
-agent.onMonitor('tool_executed', (event) => {
+agent.on('tool_executed', (event) => {
   if (event.call.name === 'skills') {
     console.log('Skill loaded:', event.call.input.skill_name);
   }
 });
 
 // 监听工具说明书更新
-agent.onMonitor('tool_manual_updated', (event) => {
+agent.on('tool_manual_updated', (event) => {
   console.log('Tools manual updated:', event.tools);
 });
 ```

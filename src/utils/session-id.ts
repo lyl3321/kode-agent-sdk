@@ -17,17 +17,17 @@ export class SessionId {
     };
 
     for (const part of parts) {
-      if (part.startsWith('org:')) {
+      if (part.startsWith('org-')) {
         components.orgId = part.slice(4);
-      } else if (part.startsWith('team:')) {
+      } else if (part.startsWith('team-')) {
         components.teamId = part.slice(5);
-      } else if (part.startsWith('user:')) {
+      } else if (part.startsWith('user-')) {
         components.userId = part.slice(5);
-      } else if (part.startsWith('agent:')) {
+      } else if (part.startsWith('agent-')) {
         components.agentTemplate = part.slice(6);
-      } else if (part.startsWith('session:')) {
+      } else if (part.startsWith('session-')) {
         components.rootId = part.slice(8);
-      } else if (part.startsWith('fork:')) {
+      } else if (part.startsWith('fork-')) {
         components.forkIds.push(part.slice(5));
       }
     }
@@ -44,30 +44,30 @@ export class SessionId {
   }): string {
     const parts: string[] = [];
 
-    if (opts.orgId) parts.push(`org:${opts.orgId}`);
-    if (opts.teamId) parts.push(`team:${opts.teamId}`);
-    if (opts.userId) parts.push(`user:${opts.userId}`);
+    if (opts.orgId) parts.push(`org-${opts.orgId}`);
+    if (opts.teamId) parts.push(`team-${opts.teamId}`);
+    if (opts.userId) parts.push(`user-${opts.userId}`);
 
-    parts.push(`agent:${opts.agentTemplate}`);
+    parts.push(`agent-${opts.agentTemplate}`);
 
     if (opts.parentSessionId) {
       const parent = SessionId.parse(opts.parentSessionId);
-      parts.push(`session:${parent.rootId}`);
-      parts.push(...parent.forkIds.map((id) => `fork:${id}`));
-      parts.push(`fork:${this.randomId()}`);
+      parts.push(`session-${parent.rootId}`);
+      parts.push(...parent.forkIds.map((id) => `fork-${id}`));
+      parts.push(`fork-${this.randomId()}`);
     } else {
-      parts.push(`session:${this.randomId()}`);
+      parts.push(`session-${this.randomId()}`);
     }
 
     return parts.join('/');
   }
 
   static snapshot(sessionId: string, sfpIndex: number): string {
-    return `${sessionId}@sfp:${sfpIndex}`;
+    return `${sessionId}@sfp-${sfpIndex}`;
   }
 
   static label(sessionId: string, label: string): string {
-    return `${sessionId}@label:${label}`;
+    return `${sessionId}@label-${label}`;
   }
 
   private static randomId(): string {

@@ -89,7 +89,7 @@ export function createDependencies(): AgentDependencies {
 | 字段 | 说明 |
 | --- | --- |
 | `templateId` | 必填。引用已注册模板。|
-| `agentId?` | 可选。未指定时自动生成 `agt:` 前缀 ULID。|
+| `agentId?` | 可选。未指定时自动生成 `agt-` 前缀 ULID。|
 | `model` / `modelConfig` | 提供 `ModelProvider` 实例或配置。|
 | `sandbox` | `Sandbox` 实例或 `SandboxConfig`（kind/workDir/enforceBoundary/allowPaths 等）。|
 | `tools` | 工具名称数组。默认遵循模板：`'*'` 表示注册表所有工具。|
@@ -110,7 +110,7 @@ export function createDependencies(): AgentDependencies {
 ## Agent.resume / Agent.resumeFromStore
 
 ```typescript
-const agent = await Agent.resume('agt:demo', {
+const agent = await Agent.resume('agt-demo', {
   templateId: 'repo-assistant',
   modelConfig: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', apiKey: process.env.ANTHROPIC_API_KEY! },
   sandbox: { kind: 'local', workDir: './workspace', enforceBoundary: true },
@@ -119,7 +119,7 @@ const agent = await Agent.resume('agt:demo', {
   autoRun: true,      // 恢复后继续处理队列
 });
 
-const agent2 = await Agent.resumeFromStore('agt:demo', deps, {
+const agent2 = await Agent.resumeFromStore('agt-demo', deps, {
   overrides: { modelConfig: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', apiKey: process.env.ANTHROPIC_API_KEY! } },
 });
 ```

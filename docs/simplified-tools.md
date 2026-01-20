@@ -376,7 +376,7 @@ defineTool({
 ### 监听自定义事件
 
 ```typescript
-agent.onMonitor('tool_custom_event', (event) => {
+agent.on('tool_custom_event', (event) => {
   console.log(`[${event.toolName}] ${event.eventType}:`, event.data);
 
   // 示例输出：
@@ -490,7 +490,7 @@ const agent = await Agent.create({
 });
 
 // 监听自定义事件
-agent.onMonitor('tool_custom_event', (event) => {
+agent.on('tool_custom_event', (event) => {
   if (event.eventType === 'weather_request') {
     console.log(`Fetching weather for ${event.data.city}...`);
   }

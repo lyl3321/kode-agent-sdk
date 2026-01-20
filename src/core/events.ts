@@ -33,6 +33,13 @@ export class EventBus {
     this.subscribers.set('progress', new Set());
     this.subscribers.set('control', new Set());
     this.subscribers.set('monitor', new Set());
+
+    // Prevent Node.js ERR_UNHANDLED_ERROR when emitting 'error' events
+    // without a listener. This allows MonitorEvent with type='error' to be
+    // emitted safely. Users can still register their own 'error' handlers.
+    this.monitorEmitter.on('error', () => {
+      // No-op: errors are handled through the subscriber system
+    });
   }
 
   setStore(store: Store, agentId: string) {

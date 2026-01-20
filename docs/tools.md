@@ -208,7 +208,7 @@ export class BadTool implements ToolInstance {
 可以监听工具超时事件以进行告警或降级处理：
 
 ```typescript
-agent.onMonitor('error', (event) => {
+agent.on('error', (event) => {
   if (event.phase === 'tool' && event.message.includes('aborted')) {
     console.log('Tool execution timed out:', event.detail);
     // 发送告警、记录日志等

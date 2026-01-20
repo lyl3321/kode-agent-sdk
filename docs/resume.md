@@ -22,7 +22,7 @@ import { createDependencies } from '../bootstrap/dependencies';
 const deps = createDependencies();
 
 // 方式一：显式配置
-const agent = await Agent.resume('agt:demo', {
+const agent = await Agent.resume('agt-demo', {
   templateId: 'repo-assistant',
   modelConfig: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', apiKey: process.env.ANTHROPIC_API_KEY! },
   sandbox: { kind: 'local', workDir: './workspace', enforceBoundary: true },
@@ -32,7 +32,7 @@ const agent = await Agent.resume('agt:demo', {
 });
 
 // 方式二：读取 metadata（推荐）
-const agent2 = await Agent.resumeFromStore('agt:demo', deps, {
+const agent2 = await Agent.resumeFromStore('agt-demo', deps, {
   overrides: {
     modelConfig: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', apiKey: process.env.ANTHROPIC_API_KEY! },
   },
@@ -70,7 +70,7 @@ const forked = await agent.fork(bookmarkId);
 await forked.send('这是一个基于原对话分叉出的新任务。');
 ```
 
-- `snapshot(label?)` 返回 `SnapshotId`（默认为 `sfp:{index}`）。
+- `snapshot(label?)` 返回 `SnapshotId`（默认为 `sfp-{index}`）。
 - `fork(sel?)` 创建新 Agent：继承工具/权限配置与 lineage，并把消息复制到新 Store 命名空间。
 - 分叉后的 Agent 需要独立绑定事件监听。
 
