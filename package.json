@@ -54,6 +54,7 @@
     "zod-to-json-schema": "~3.23.0"
   },
   "devDependencies": {
+    "@shareai-lab/kode-sdk": "file:.",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.0.0",
     "@types/pg": "^8.16.0",

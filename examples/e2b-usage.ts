@@ -1,6 +1,6 @@
 import './shared/load-env';
 
-import { Agent, E2BSandbox, E2BTemplateBuilder } from '../src';
+import { Agent, E2BSandbox, E2BTemplateBuilder } from '@shareai-lab/kode-sdk';
 import { createRuntime } from './shared/runtime';
 
 // ============================================================
