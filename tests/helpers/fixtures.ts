@@ -43,16 +43,22 @@ export interface IntegrationConfig {
 
 /**
  * 加载集成测试配置
+ * 注意：.env.test 文件配置优先于环境变量，确保测试配置可控
  */
 export function loadIntegrationConfig(): IntegrationConfig {
   let envConfig: Record<string, string> = {};
 
   if (fs.existsSync(ENV_PATH)) {
     envConfig = parseEnvFile(ENV_PATH);
+    // .env.test 配置强制覆盖 process.env，确保测试使用文件配置
+    for (const [key, value] of Object.entries(envConfig)) {
+      process.env[key] = value;
+    }
   }
 
+  // .env.test 优先于 process.env
   const get = (key: string): string | undefined => {
-    const val = process.env[key] || envConfig[key];
+    const val = envConfig[key] || process.env[key];
     return val?.trim() || undefined;
   };
 

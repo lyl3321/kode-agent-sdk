@@ -165,7 +165,9 @@ export async function createIntegrationTestAgent(options: IntegrationTestAgentOp
     modelFactory: (config) => new AnthropicProvider(
       config.apiKey!,
       config.model,
-      config.baseUrl ?? apiConfig.baseUrl
+      config.baseUrl ?? apiConfig.baseUrl,
+      undefined,
+      { reasoningTransport: 'text' }
     ),
   };
 
