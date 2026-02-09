@@ -14,11 +14,9 @@ runner
 
     const r1 = await agent.chat('你好，请用一句话介绍自己');
     expect.toBeTruthy(r1.text);
-    console.log(`    响应1: ${r1.text?.slice(0, 60)}...`);
 
     const r2 = await agent.chat('2+2等于几？');
     expect.toBeTruthy(r2.text);
-    console.log(`    响应2: ${r2.text?.slice(0, 60)}...`);
 
     const status = await agent.status();
     expect.toBeGreaterThan(status.stepCount, 1);
@@ -44,7 +42,6 @@ runner
 
     expect.toBeGreaterThan(chunks, 0);
     expect.toBeTruthy(fullText);
-    console.log(`    收到 ${chunks} 个文本块`);
 
     await cleanup();
   });

@@ -11,11 +11,6 @@ import { z } from 'zod';
 const runner = new TestRunner('集成测试 - Resume 场景');
 
 runner.test('Manual resume preserves hooks, todos, custom tool and subagent state', async () => {
-  console.log('\n[Resume手动测试] 测试目标:');
-  console.log('  1) Resume 后模板与工具 Hook 继续生效');
-  console.log('  2) Todo 状态与自定义工具事件保持');
-  console.log('  3) Sub-agent 可在 Resume 后继续工作');
-
   const hookFlags = { pre: 0, post: 0, messagesChanged: 0 };
 
   const probeTool = tool({
@@ -117,11 +112,6 @@ runner.test('Manual resume preserves hooks, todos, custom tool and subagent stat
 });
 
 runner.test('Crash resume seals pending approvals and preserves state', async () => {
-  console.log('\n[Resume崩溃测试] 测试目标:');
-  console.log('  1) 崩溃后 Resume 会自动封存未完成的工具调用');
-  console.log('  2) Sealed 结果写回消息与工具记录');
-  console.log('  3) Resume 后仍可以正常继续对话');
-
   const harness = await IntegrationHarness.create({
     customTemplate: {
       id: 'resume-crash',

@@ -136,7 +136,12 @@ export async function createIntegrationTestAgent(options: IntegrationTestAgentOp
   const workDir = options.workDir || path.join(TEST_ROOT, `int-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
   const storeDir = path.join(TEST_ROOT, `store-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
 
-  ensureCleanDir(workDir);
+  // 仅在自动生成 workDir 时清空；外部传入的 workDir 可能已预置测试文件
+  if (!options.workDir) {
+    ensureCleanDir(workDir);
+  } else {
+    fs.mkdirSync(workDir, { recursive: true });
+  }
   ensureCleanDir(storeDir);
 
   const store = new JSONStore(storeDir);

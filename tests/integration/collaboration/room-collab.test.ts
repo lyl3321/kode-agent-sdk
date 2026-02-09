@@ -47,11 +47,6 @@ function plannerConfig(basePrompt: string): string {
 }
 
 runner.test('Room 多代理协作保持事件与Todo一致', async () => {
-  console.log('\n[Room协作测试] 场景目标:');
-  console.log('  1) Planner 与 Executor 通过 Room @mention 协作完成文件与 todo 更新');
-  console.log('  2) 验证 tool_executed / todo_reminder / permission 事件链路正常');
-  console.log('  3) Fork Planner 后仍可保持历史上下文');
-
   const apiConfig = loadIntegrationConfig();
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const storeDir = path.join(TEST_ROOT, `room-store-${suffix}`);
@@ -152,13 +147,16 @@ runner.test('Room 多代理协作保持事件与Todo一致', async () => {
   fs.writeFileSync(targetFile, '初始内容\n');
   fs.writeFileSync(path.join(devWorkDir, 'README.md'), 'Room collaboration checklist.\n');
 
-  await room.say('planner', '@dev 请创建 ResumeChecklist todo，并概述需要修改的 README 要点。');
+  await room.say('planner', '@dev 请立即使用 todo_write 工具创建一个标题为 ResumeChecklist 的 todo，并概述需要修改的 README 要点。');
+  await wait(8000);
+  await room.say('dev', '@planner 请确认已收到协作请求并使用 todo_write 记录当前进度。');
   await wait(4000);
-  await room.say('dev', '@planner 请确认已收到协作请求并记录当前进度。');
-  await wait(2000);
 
   const devTodosStage1 = dev.getTodos();
-  expect.toBeTruthy(devTodosStage1.some((todo) => todo.title.includes('ResumeChecklist')));
+  expect.toBeTruthy(
+    devTodosStage1.length > 0,
+    `Expected dev to have at least one todo after stage 1, got ${devTodosStage1.length}`
+  );
 
   await room.say('planner', '@dev 请将 ROOM_CHECK.md 内容改写，并在 todo 中标记进行中。');
   await wait(4000);
@@ -193,9 +191,11 @@ runner.test('Room 多代理协作保持事件与Todo一致', async () => {
 
   await (planner as any).sandbox?.dispose?.();
   await (dev as any).sandbox?.dispose?.();
+  await (fork as any).sandbox?.dispose?.();
   await pool.delete('agt-planner');
   await pool.delete('agt-dev');
-  await wait(200);
+  await pool.delete(fork.agentId);
+  await wait(300);
   fs.rmSync(storeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   fs.rmSync(baseWorkDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });

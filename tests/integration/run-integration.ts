@@ -54,7 +54,6 @@ async function testChat(workDir: string) {
   const agent = await Agent.create(createConfig(workDir), deps);
   const reply = await agent.chat('请用简短一句话介绍你是谁。');
   if (!reply.text) throw new Error('empty chat reply');
-  console.log('Chat response:', reply.text);
 }
 
 async function testSubscribe(workDir: string) {
@@ -74,7 +73,6 @@ async function testSubscribe(workDir: string) {
   }
   if (iterator.return) await iterator.return();
   if (!received) throw new Error('subscribe did not receive text_chunk');
-  console.log('Subscribe received text chunk');
 }
 
 async function run() {

@@ -312,11 +312,6 @@ runner.test('工具执行 - 调用 MCP 工具', async () => {
   // 验证结果
   expect.toBeTruthy(result, '应该返回结果');
 
-  // 输出详细结果以便调试
-  if (result.isError) {
-    console.log('  ⚠️  工具执行返回 isError，结果:', JSON.stringify(result, null, 2));
-  }
-
   // 注意：某些 MCP 服务器可能返回 isError=true 但仍包含有效内容
   // 我们主要验证返回了内容
   expect.toBeTruthy(result.content, '应返回内容');
@@ -511,11 +506,6 @@ runner.test('空参数工具调用', async () => {
   );
 
   expect.toBeTruthy(result, '应返回结果');
-
-  // 输出详细结果以便调试
-  if (result.isError) {
-    console.log('  ⚠️  工具执行返回 isError，结果:', JSON.stringify(result, null, 2));
-  }
 
   // 主要验证返回了内容
   expect.toBeTruthy(result.content, '应返回内容');

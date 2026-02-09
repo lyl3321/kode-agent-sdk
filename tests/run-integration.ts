@@ -5,8 +5,11 @@
 import './helpers/env-setup';
 import path from 'path';
 import fg from 'fast-glob';
-import { ensureCleanDir, wait } from './helpers/setup';
+import { ensureCleanDir } from './helpers/setup';
 import { TEST_ROOT } from './helpers/fixtures';
+import { TestResult, runWithConcurrency } from './helpers/utils';
+
+const CONCURRENCY = parseInt(process.env.TEST_CONCURRENCY || '4', 10);
 
 async function runAll() {
   ensureCleanDir(TEST_ROOT);
@@ -30,34 +33,57 @@ async function runAll() {
 
   entries.sort();
 
-  let totalPassed = 0;
-  let totalFailed = 0;
-  const allFailures: Array<{ suite: string; test: string; error: Error }> = [];
-
+  // 串行 import 所有模块（避免 ts-node 并发编译竞态）
+  const modules: Array<{ moduleName: string; testModule: any }> = [];
   for (const relativePath of entries) {
     const moduleName = relativePath.replace(/\.test\.ts$/, '').replace(/\//g, ' › ');
     const importPath = './' + relativePath.replace(/\\/g, '/');
     try {
       const testModule = await import(importPath);
-      const result = await testModule.run();
-
-      totalPassed += result.passed;
-      totalFailed += result.failed;
-
-      for (const failure of result.failures) {
-        allFailures.push({
-          suite: moduleName,
-          test: failure.name,
-          error: failure.error,
-        });
-      }
-
-      // API限流间隔
-      await wait(1000);
+      modules.push({ moduleName, testModule });
     } catch (error: any) {
       console.error(`\n✗ 加载测试模块失败: ${moduleName}`);
       console.error(`  ${error.message}\n`);
-      totalFailed++;
+    }
+  }
+
+  let totalPassed = 0;
+  let totalFailed = 0;
+  const allFailures: Array<{ suite: string; test: string; error: Error }> = [];
+
+  // 用 runWithConcurrency 并行执行，每个完成后原子输出
+  const tasks = modules.map(({ moduleName, testModule }) => async () => {
+    try {
+      const result: TestResult = await testModule.run();
+      // 原子输出：单次 write 避免交叉
+      process.stdout.write(result.output + '\n');
+      return { moduleName, result };
+    } catch (error: any) {
+      const output = `\n✗ 运行测试模块失败: ${moduleName}\n  ${error.message}\n`;
+      process.stdout.write(output);
+      return {
+        moduleName,
+        result: {
+          passed: 0,
+          failed: 1,
+          failures: [{ name: '运行失败', error: error instanceof Error ? error : new Error(String(error)) }],
+          output,
+        } as TestResult,
+      };
+    }
+  });
+
+  const results = await runWithConcurrency(tasks, CONCURRENCY);
+
+  for (const { moduleName, result } of results) {
+    totalPassed += result.passed;
+    totalFailed += result.failed;
+    for (const failure of result.failures) {
+      allFailures.push({
+        suite: moduleName,
+        test: failure.name,
+        error: failure.error,
+      });
     }
   }
 
@@ -82,7 +108,12 @@ async function runAll() {
 
 }
 
-runAll().catch(err => {
-  console.error('测试运行器错误:', err);
-  process.exitCode = 1;
-});
+runAll()
+  .catch(err => {
+    console.error('测试运行器错误:', err);
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    // 并行测试中 Agent 的 file watcher 等异步资源可能未完全释放，强制退出
+    setTimeout(() => process.exit(process.exitCode || 0), 500);
+  });

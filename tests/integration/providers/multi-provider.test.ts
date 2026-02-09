@@ -181,7 +181,6 @@ fs.mkdirSync(baseDir, { recursive: true });
 for (const config of getTestConfigs()) {
   runner.test(`Provider: ${config.name}`, async () => {
     if (config.skip) {
-      console.log(`[skip] ${config.name}: ${config.skipReason}`);
       return;
     }
 
@@ -262,7 +261,7 @@ for (const config of getTestConfigs()) {
       );
       expect.toBeTruthy(agentResult.text);
       if (!fs.existsSync(testFile)) {
-        console.log(`[warn] ${config.name}: file not created at ${testFile}`);
+        // file not created; test assertions below will catch this
       }
     } finally {
       await cleanup();

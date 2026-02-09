@@ -63,10 +63,10 @@ if (!env.ok || !env.config) {
       try {
         const round1 = await runChatWithEvents(
           ctx.agent,
-          `第一轮：请仅输出 "TOKEN=${token}" 并记住它，除此之外不要输出任何文字。`
+          `我们的项目编号是 ${token}，请回复"已收到项目编号 ${token}"。`
         );
         assertTextStream(round1.progress, 'openai:e2e-round1');
-        const round2 = await runChatWithEvents(ctx.agent, '第二轮：请原样输出你刚才记住的 TOKEN。');
+        const round2 = await runChatWithEvents(ctx.agent, '请问我们的项目编号是什么？');
         assertTextStream(round2.progress, 'openai:e2e-round2');
         const replyText = round2.reply.text || '';
         expect.toContain(replyText, token);
@@ -132,12 +132,12 @@ if (!env.ok || !env.config) {
       try {
         const first = await runChatWithEvents(
           ctx.agent,
-          `请仅输出 "TOKEN=${token}" 并记住它，除此之外不要输出任何文字。`
+          `我们的项目编号是 ${token}，请回复"已收到项目编号 ${token}"。`
         );
         assertTextStream(first.progress, 'openai:e2e-resume-1');
 
         const resumed = await Agent.resume(ctx.agent.agentId, ctx.config, ctx.deps);
-        const second = await runChatWithEvents(resumed, '请原样输出你刚才记住的 TOKEN。');
+        const second = await runChatWithEvents(resumed, '请问我们的项目编号是什么？');
         assertTextStream(second.progress, 'openai:e2e-resume-2');
         const replyText = second.reply.text || '';
         expect.toContain(replyText, token);

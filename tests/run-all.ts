@@ -7,6 +7,7 @@ import path from 'path';
 import fg from 'fast-glob';
 import { ensureCleanDir } from './helpers/setup';
 import { TEST_ROOT } from './helpers/fixtures';
+import { TestResult, runWithConcurrency } from './helpers/utils';
 
 interface SuiteResult {
   suite: string;
@@ -15,7 +16,7 @@ interface SuiteResult {
   failures: Array<{ suite: string; test: string; error: Error }>;
 }
 
-async function runSuite(globPattern: string, label: string): Promise<SuiteResult> {
+async function runSuite(globPattern: string, label: string, concurrency: number = 1): Promise<SuiteResult> {
   const cwd = path.resolve(__dirname);
   const entries = await fg(globPattern, { cwd, absolute: false, dot: false });
   entries.sort();
@@ -26,17 +27,14 @@ async function runSuite(globPattern: string, label: string): Promise<SuiteResult
 
   console.log(`\n▶ 运行${label}...\n`);
 
+  // 串行 import 所有模块（避免 ts-node 并发编译竞态）
+  const modules: Array<{ moduleName: string; testModule: any }> = [];
   for (const relativePath of entries) {
     const moduleName = relativePath.replace(/\.test\.ts$/, '').replace(/\//g, ' › ');
     const importPath = './' + relativePath.replace(/\\/g, '/');
     try {
       const testModule = await import(importPath);
-      const result = await testModule.run();
-      passed += result.passed;
-      failed += result.failed;
-      for (const failure of result.failures) {
-        failures.push({ suite: moduleName, test: failure.name, error: failure.error });
-      }
+      modules.push({ moduleName, testModule });
     } catch (error: any) {
       failed++;
       failures.push({
@@ -45,6 +43,48 @@ async function runSuite(globPattern: string, label: string): Promise<SuiteResult
         error: error instanceof Error ? error : new Error(String(error)),
       });
       console.error(`✗ ${moduleName} 加载失败: ${error.message}`);
+    }
+  }
+
+  const executeModule = async (mod: { moduleName: string; testModule: any }) => {
+    try {
+      const result: TestResult = await mod.testModule.run();
+      if (result.output) {
+        process.stdout.write(result.output + '\n');
+      }
+      return { moduleName: mod.moduleName, result };
+    } catch (error: any) {
+      const errObj = error instanceof Error ? error : new Error(String(error));
+      console.error(`✗ ${mod.moduleName} 运行失败: ${errObj.message}`);
+      return {
+        moduleName: mod.moduleName,
+        result: {
+          passed: 0,
+          failed: 1,
+          failures: [{ name: '运行失败', error: errObj }],
+          output: '',
+        } as TestResult,
+      };
+    }
+  };
+
+  let results: Array<{ moduleName: string; result: TestResult }>;
+
+  if (concurrency > 1) {
+    const tasks = modules.map((mod) => () => executeModule(mod));
+    results = await runWithConcurrency(tasks, concurrency);
+  } else {
+    results = [];
+    for (const mod of modules) {
+      results.push(await executeModule(mod));
+    }
+  }
+
+  for (const { moduleName, result } of results) {
+    passed += result.passed;
+    failed += result.failed;
+    for (const failure of result.failures) {
+      failures.push({ suite: moduleName, test: failure.name, error: failure.error });
     }
   }
 
@@ -61,7 +101,7 @@ async function runAll() {
   const results: SuiteResult[] = [];
 
   results.push(await runSuite('unit/**/*.test.ts', '单元测试'));
-  results.push(await runSuite('integration/**/*.test.ts', '集成测试'));
+  results.push(await runSuite('integration/**/*.test.ts', '集成测试', 4));
   results.push(await runSuite('e2e/**/*.test.ts', '端到端测试'));
 
   const totalPassed = results.reduce((sum, r) => sum + r.passed, 0);
@@ -88,7 +128,11 @@ async function runAll() {
   }
 }
 
-runAll().catch(err => {
-  console.error('测试运行器错误:', err);
-  process.exitCode = 1;
-});
+runAll()
+  .catch(err => {
+    console.error('测试运行器错误:', err);
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    setTimeout(() => process.exit(process.exitCode || 0), 500);
+  });

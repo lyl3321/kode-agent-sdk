@@ -42,6 +42,10 @@ async function runAll() {
       const testModule = await import(importPath);
       const result = await testModule.run();
 
+      if (result.output) {
+        process.stdout.write(result.output + '\n');
+      }
+
       totalPassed += result.passed;
       totalFailed += result.failed;
 
