@@ -142,6 +142,52 @@ runner
 
     await store.delete('agent');
     expect.toEqual(await store.exists('agent'), false);
+  })
+
+  .test('exists() returns false when directory exists but meta.json is missing', async () => {
+    const dir = createDir('exists-no-meta');
+    const store = new JSONStore(dir);
+    // Create agent directory without meta.json
+    fs.mkdirSync(path.join(dir, 'agent'), { recursive: true });
+    expect.toEqual(await store.exists('agent'), false);
+  })
+
+  .test('exists() returns false when meta.json is corrupted JSON', async () => {
+    const dir = createDir('exists-corrupt');
+    const store = new JSONStore(dir);
+    const agentDir = path.join(dir, 'agent');
+    fs.mkdirSync(agentDir, { recursive: true });
+    fs.writeFileSync(path.join(agentDir, 'meta.json'), '{not valid json!!!', 'utf-8');
+    expect.toEqual(await store.exists('agent'), false);
+  })
+
+  .test('exists() returns false when meta.json lacks metadata field', async () => {
+    const dir = createDir('exists-no-metadata');
+    const store = new JSONStore(dir);
+    const agentDir = path.join(dir, 'agent');
+    fs.mkdirSync(agentDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(agentDir, 'meta.json'),
+      JSON.stringify({ agentId: 'agent', templateId: 'tpl' }),
+      'utf-8'
+    );
+    expect.toEqual(await store.exists('agent'), false);
+  })
+
+  .test('exists() returns true when meta.json is complete', async () => {
+    const dir = createDir('exists-complete');
+    const store = new JSONStore(dir);
+    await store.saveInfo('agent', {
+      agentId: 'agent',
+      templateId: 'tpl',
+      createdAt: new Date().toISOString(),
+      lineage: [],
+      configVersion: 'test',
+      messageCount: 0,
+      lastSfpIndex: 0,
+      metadata: { templateId: 'tpl' },
+    });
+    expect.toEqual(await store.exists('agent'), true);
   });
 
 export async function run() {

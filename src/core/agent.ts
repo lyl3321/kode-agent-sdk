@@ -877,6 +877,43 @@ export class Agent {
     return Agent.resume(agentId, { ...baseConfig, ...overrides }, deps, opts);
   }
 
+  static async resumeOrCreate(
+    agentId: string,
+    config: AgentConfig,
+    deps: AgentDependencies,
+    opts?: {
+      autoRun?: boolean;
+      strategy?: ResumeStrategy;
+      overrides?: Partial<AgentConfig>;
+      onCorrupted?: (agentId: string, error: ResumeError) => Promise<void> | void;
+    }
+  ): Promise<Agent> {
+    try {
+      return await Agent.resumeFromStore(agentId, deps, opts);
+    } catch (error) {
+      if (!(error instanceof ResumeError)) {
+        throw error;
+      }
+
+      switch (error.code) {
+        case 'AGENT_NOT_FOUND':
+          return Agent.create({ ...config, agentId }, deps);
+
+        case 'CORRUPTED_DATA': {
+          if (opts?.onCorrupted) {
+            await opts.onCorrupted(agentId, error);
+          }
+          const store = Agent.requireStore(deps);
+          await store.delete(agentId);
+          return Agent.create({ ...config, agentId }, deps);
+        }
+
+        default:
+          throw error;
+      }
+    }
+  }
+
   private ensureProcessing() {
     // 检查是否超时
     if (this.processingPromise) {
