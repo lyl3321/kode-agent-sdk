@@ -206,17 +206,14 @@ runner.test('图片多格式识别（png/jpg/webp/gif）', async () => {
   for (const provider of PROVIDERS) {
     const env = loadProviderEnv(provider);
     if (!env.ok) {
-      console.log(`[skip] ${provider}: ${env.reason}`);
       continue;
     }
     if (!env.config?.model) {
-      console.log(`[skip] ${provider}: missing ${provider.toUpperCase()}_MODEL_ID`);
       continue;
     }
 
     for (const filename of IMAGE_FILES) {
       if (provider === 'gemini' && filename.toLowerCase().endsWith('.gif')) {
-        console.log(`[skip] ${provider}: image/gif unsupported`);
         continue;
       }
 
@@ -237,13 +234,11 @@ runner.test('图片多格式识别（png/jpg/webp/gif）', async () => {
         const response = await getResponseOrSkip(result, deps, agent, `[${provider}][${filename}]`, true);
 
         if (response.skipped) {
-          console.log(`[skip] ${provider}/${filename}: ${response.skipReason}`);
           await cleanup();
           continue;
         }
 
         if (response.error) {
-          console.log(`[fail] ${provider}/${filename}: ${response.error}`);
           failures.push(`[${provider}][${filename}] ${response.error}`);
           await cleanup();
           continue;
@@ -253,12 +248,10 @@ runner.test('图片多格式识别（png/jpg/webp/gif）', async () => {
         const animals = normalizeAnimals(parsed.animals);
         animals.sort();
         expect.toEqual(animals.join(','), ['cat', 'dog'].join(','));
-        console.log(`[pass] ${provider}/${filename}: animals=${JSON.stringify(animals)}`);
 
         await cleanup();
       } catch (error: any) {
         const msg = error?.message || String(error);
-        console.log(`[fail] ${provider}/${filename}: ${msg}`);
         failures.push(`[${provider}][${filename}] ${msg}`);
       }
     }
@@ -276,17 +269,14 @@ runner.test('PDF 内容识别', async () => {
   for (const provider of PROVIDERS) {
     const env = loadProviderEnv(provider);
     if (!env.ok) {
-      console.log(`[skip] ${provider}: ${env.reason}`);
       continue;
     }
     if (!env.config?.model) {
-      console.log(`[skip] ${provider}: missing ${provider.toUpperCase()}_MODEL_ID`);
       continue;
     }
 
     const pdfSupport = shouldRunPdf(provider, env.config);
     if (!pdfSupport.ok) {
-      console.log(`[skip] ${provider}: ${pdfSupport.reason}`);
       continue;
     }
 
@@ -312,14 +302,12 @@ runner.test('PDF 内容识别', async () => {
         const errors = await collectMonitorErrors(deps.store, agent.agentId);
         // Check if this is a capability limitation (model doesn't support PDF)
         if (errors.length > 0 && isCapabilityError(errors)) {
-          console.log(`[skip] ${provider}: model/proxy capability limitation`);
           await cleanup();
           continue;
         }
         const messages = await deps.store.loadMessages(agent.agentId);
         const debug = describeLastAssistant(messages);
         const errorNote = errors.length > 0 ? ` monitorErrors=${errors.join(' | ')}` : '';
-        console.log(`[fail] ${provider}: Empty response. ${debug}${errorNote}`);
         failures.push(`[${provider}] Empty response. ${debug}${errorNote}`);
         await cleanup();
         continue;
@@ -344,11 +332,9 @@ runner.test('PDF 内容识别', async () => {
         expect.toEqual(matchesFunPhrase(normalized), true, 'missing keyword: Fun fun fun');
       }
 
-      console.log(`[pass] ${provider}: PDF content recognized`);
       await cleanup();
     } catch (error: any) {
       const msg = error?.message || String(error);
-      console.log(`[fail] ${provider}: ${msg}`);
       failures.push(`[${provider}] ${msg}`);
     }
   }
@@ -364,11 +350,10 @@ runner.test('音频识别（wav/mp3）', async () => {
       assertAssetExists(filename);
       hasAudioFiles = true;
     } catch {
-      console.log(`[skip] Audio file not found: ${filename}`);
+      // audio file not found, skip
     }
   }
   if (!hasAudioFiles) {
-    console.log('[skip] No audio test files available');
     return;
   }
 
@@ -377,11 +362,9 @@ runner.test('音频识别（wav/mp3）', async () => {
   for (const provider of PROVIDERS) {
     const env = loadProviderEnv(provider);
     if (!env.ok) {
-      console.log(`[skip] ${provider}: ${env.reason}`);
       continue;
     }
     if (!env.config?.model) {
-      console.log(`[skip] ${provider}: missing ${provider.toUpperCase()}_MODEL_ID`);
       continue;
     }
 
@@ -394,7 +377,6 @@ runner.test('音频识别（wav/mp3）', async () => {
 
       const audioSupport = shouldRunAudio(provider, env.config, filename);
       if (!audioSupport.ok) {
-        console.log(`[skip] ${provider}/${filename}: ${audioSupport.reason}`);
         continue;
       }
 
@@ -415,13 +397,11 @@ runner.test('音频识别（wav/mp3）', async () => {
         const response = await getResponseOrSkip(result, deps, agent, `[${provider}][${filename}]`, true);
 
         if (response.skipped) {
-          console.log(`[skip] ${provider}/${filename}: ${response.skipReason}`);
           await cleanup();
           continue;
         }
 
         if (response.error) {
-          console.log(`[fail] ${provider}/${filename}: ${response.error}`);
           failures.push(`[${provider}][${filename}] ${response.error}`);
           await cleanup();
           continue;
@@ -436,12 +416,10 @@ runner.test('音频识别（wav/mp3）', async () => {
         const normalizedWords = parsed.words.map((w: any) => String(w).toLowerCase().trim());
         const hasHello = normalizedWords.some((w: string) => w.includes('hello'));
         expect.toBeTruthy(hasHello, `[${provider}][${filename}] Should recognize "hello" in audio, got: ${JSON.stringify(parsed.words)}`);
-        console.log(`[pass] ${provider}/${filename}: words=${JSON.stringify(parsed.words)}`);
 
         await cleanup();
       } catch (error: any) {
         const msg = error?.message || String(error);
-        console.log(`[fail] ${provider}/${filename}: ${msg}`);
         failures.push(`[${provider}][${filename}] ${msg}`);
       }
     }
@@ -455,7 +433,6 @@ runner.test('视频识别', async () => {
   try {
     assertAssetExists(VIDEO_FILE);
   } catch {
-    console.log(`[skip] Video file not found: ${VIDEO_FILE}`);
     return;
   }
 
@@ -466,17 +443,14 @@ runner.test('视频识别', async () => {
   for (const provider of PROVIDERS) {
     const env = loadProviderEnv(provider);
     if (!env.ok) {
-      console.log(`[skip] ${provider}: ${env.reason}`);
       continue;
     }
     if (!env.config?.model) {
-      console.log(`[skip] ${provider}: missing ${provider.toUpperCase()}_MODEL_ID`);
       continue;
     }
 
     const videoSupport = shouldRunVideo(provider, env.config);
     if (!videoSupport.ok) {
-      console.log(`[skip] ${provider}: ${videoSupport.reason}`);
       continue;
     }
 
@@ -496,13 +470,11 @@ runner.test('视频识别', async () => {
       const response = await getResponseOrSkip(result, deps, agent, `[${provider}][${VIDEO_FILE}]`, true);
 
       if (response.skipped) {
-        console.log(`[skip] ${provider}: ${response.skipReason}`);
         await cleanup();
         continue;
       }
 
       if (response.error) {
-        console.log(`[fail] ${provider}: ${response.error}`);
         failures.push(`[${provider}] ${response.error}`);
         await cleanup();
         continue;
@@ -513,12 +485,10 @@ runner.test('视频识别', async () => {
       const animals = normalizeAnimals(parsed.animals);
       const hasCatOrDog = animals.some((a: string) => a === 'cat' || a === 'dog');
       expect.toBeTruthy(hasCatOrDog, `[${provider}] Should recognize cat or dog in video, got: ${JSON.stringify(animals)}`);
-      console.log(`[pass] ${provider}/${VIDEO_FILE}: animals=${JSON.stringify(animals)}`);
 
       await cleanup();
     } catch (error: any) {
       const msg = error?.message || String(error);
-      console.log(`[fail] ${provider}: ${msg}`);
       failures.push(`[${provider}] ${msg}`);
     }
   }

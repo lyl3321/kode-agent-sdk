@@ -5,10 +5,6 @@ import { IntegrationHarness } from '../../helpers/integration-harness';
 const runner = new TestRunner('集成测试 - 事件系统');
 
 runner.test('订阅 progress 与 monitor 事件', async () => {
-  console.log('\n[事件测试] 测试目标:');
-  console.log('  1) 验证 progress 流中包含 text_chunk 与 done 事件');
-  console.log('  2) 验证 monitor 信道会广播 state_changed');
-
   const harness = await IntegrationHarness.create();
 
   const monitorEventsPromise = collectEvents(harness.getAgent(), ['monitor'], (event) => event.type === 'state_changed');

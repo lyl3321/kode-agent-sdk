@@ -13,11 +13,6 @@ import { ModelResponse } from '../../../src/infra/provider';
 const runner = new TestRunner('集成测试 - 子 Agent 委派');
 
 runner.test('task_run 协调多子代理并结合 todo / 权限 / Hook', async () => {
-  console.log('\n[子代理综合测试] 测试目标:');
-  console.log('  1) 父代理通过 task_run 协调多个子代理完成计划与文件修改');
-  console.log('  2) 权限审批、Todo 生命周期、Monitor 事件与 Hook 全程生效');
-  console.log('  3) 子代理结果与自定义工具事件在 Resume 之前保持一致');
-
   const hookCounters = { pre: 0, post: 0, messagesChanged: 0 };
   const toolCounters = { pre: 0, post: 0 };
   const notedStages: string[] = [];
@@ -35,11 +30,9 @@ runner.test('task_run 协调多子代理并结合 todo / 权限 / Hook', async (
     hooks: {
       preToolUse: async () => {
         toolCounters.pre += 1;
-        console.log(`[子代理测试][Hook] preToolUse (${currentStage})`);
       },
       postToolUse: async (outcome) => {
         toolCounters.post += 1;
-        console.log(`[子代理测试][Hook] postToolUse (${currentStage})`);
         return { replace: outcome };
       },
     },
@@ -77,11 +70,9 @@ runner.test('task_run 协调多子代理并结合 todo / 权限 / Hook', async (
     hooks: {
       preModel: async () => {
         hookCounters.pre += 1;
-        console.log(`[子代理测试][Hook] preModel (${currentStage})`);
       },
       postModel: async (response: ModelResponse) => {
         hookCounters.post += 1;
-        console.log(`[子代理测试][Hook] postModel (${currentStage})`);
         const block = (response.content as ContentBlock[] | undefined)?.find(
           (entry): entry is Extract<ContentBlock, { type: 'text' }> => entry.type === 'text'
         );
@@ -91,9 +82,6 @@ runner.test('task_run 协调多子代理并结合 todo / 权限 / Hook', async (
       },
       messagesChanged: async (snapshot: { messages?: Array<{ role: string }> }) => {
         hookCounters.messagesChanged += 1;
-        console.log(
-          `[子代理测试][Hook] messagesChanged (${currentStage}) - 消息数: ${snapshot?.messages?.length ?? 0}`
-        );
       },
     },
   };

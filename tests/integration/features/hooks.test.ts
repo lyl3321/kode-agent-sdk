@@ -11,11 +11,6 @@ import { IntegrationHarness } from '../../helpers/integration-harness';
 const runner = new TestRunner('集成测试 - Hook 机制');
 
 runner.test('模板 Hook 与工具 Hook 生效', async () => {
-  console.log('\n[基础Hook测试] 测试目标:');
-  console.log('  1) 验证模板 preModel/postModel/messagesChanged 钩子全部触发');
-  console.log('  2) 验证工具 pre/post 钩子顺序执行且修改响应');
-  console.log('  3) 通过 monitor 事件确认 hook_probe 自定义事件记录');
-
   const templateFlags = {
     pre: false,
     post: false,
@@ -106,12 +101,6 @@ runner.test('模板 Hook 与工具 Hook 生效', async () => {
 });
 
 runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
-  console.log('\n[组合Hook测试] 测试目标:');
-  console.log('  1) 覆盖模板 Hook 在初始对话与 Resume 后的触发顺序');
-  console.log('  2) 验证工具 Hook、task_run 子代理、delegateTask 组合执行');
-  console.log('  3) 捕获事件流，确保 progress/monitor/control 记录完整');
-  console.log('  4) 验证 hook_probe 自定义事件包含阶段信息，并记录所有 note 数据');
-
   const hookTimeline: string[] = [];
   const toolTimeline: string[] = [];
   const notedMessages: string[] = [];
@@ -145,12 +134,10 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
       preToolUse: async () => {
         toolCounters.pre += 1;
         toolTimeline.push(`preToolUse:${currentStage}`);
-        console.log(`[组合测试][Hook] preToolUse 触发 (${currentStage})`);
       },
       postToolUse: async (outcome: ToolOutcome) => {
         toolCounters.post += 1;
         toolTimeline.push(`postToolUse:${currentStage}`);
-        console.log(`[组合测试][Hook] postToolUse 触发 (${currentStage})`);
         return { replace: outcome };
       },
     },
@@ -176,12 +163,10 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
       preModel: async () => {
         templateCounters.pre += 1;
         hookTimeline.push(`preModel:${currentStage}`);
-        console.log(`[组合测试][Hook] preModel 触发 (${currentStage})`);
       },
       postModel: async (response: ModelResponse) => {
         templateCounters.post += 1;
         hookTimeline.push(`postModel:${currentStage}`);
-        console.log(`[组合测试][Hook] postModel 触发 (${currentStage})`);
         const textBlock = response.content?.find(
           (block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text'
         );
@@ -192,9 +177,6 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
       messagesChanged: async (snapshot: { messages?: Array<{ role: string; content: ContentBlock[] }> }) => {
         templateCounters.messagesChanged += 1;
         hookTimeline.push(`messagesChanged:${currentStage}`);
-        console.log(
-          `[组合测试][Hook] messagesChanged 触发 (${currentStage}) - 历史消息数: ${snapshot?.messages?.length ?? 0}`
-        );
       },
     },
     tools: ['hook_probe', 'task_run', 'todo_read', 'todo_write'],
@@ -236,9 +218,6 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
   });
   expect.toBeTruthy(phase1.reply.text && phase1.reply.text.includes('Hook:阶段1'));
 
-  console.log('\n[阶段1] progress 事件数量:', phase1.events.filter((e) => e.channel === 'progress').length);
-  console.log('[阶段1] monitor 事件数量:', phase1.events.filter((e) => e.channel === 'monitor').length);
-
   const phase1NotePath = `${workDir}/phase1-summary.txt`;
   fs.writeFileSync(phase1NotePath, `阶段1对话摘要:\n${phase1.reply.text || ''}\n`);
 
@@ -248,7 +227,6 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
     prompt: `请先使用 fs_read 读取 ${phase1NotePath}（不要读取目录），然后用两句话总结内容。`,
     tools: subAgentTemplate.tools,
   });
-  console.log('[阶段1] 子代理任务结果:', subTaskResult1.text);
   expect.toBeTruthy(subTaskResult1.text);
 
   currentStage = '阶段2-Resume';
@@ -271,9 +249,6 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
   });
   expect.toBeTruthy(phase2.reply.text && phase2.reply.text.includes('Hook:阶段2-Resume'));
 
-  console.log('\n[阶段2] progress 事件数量:', phase2.events.filter((e) => e.channel === 'progress').length);
-  console.log('[阶段2] monitor 事件数量:', phase2.events.filter((e) => e.channel === 'monitor').length);
-
   const phase2NotePath = `${workDir}/phase2-summary.txt`;
   fs.writeFileSync(phase2NotePath, `阶段2对话摘要:\n${phase2.reply.text || ''}\n`);
 
@@ -283,12 +258,7 @@ runner.test('Hook 与工具/Resume/子代理组合流程', async () => {
     prompt: `请先使用 fs_read 读取 ${phase2NotePath}（不要读取目录），然后用两句话总结内容并提到阶段2。`,
     tools: subAgentTemplate.tools,
   });
-  console.log('[阶段2] 子代理任务结果:', subTaskResult2.text);
   expect.toBeTruthy(subTaskResult2.text);
-
-  console.log('\n[组合测试] Hook 调用轨迹:', hookTimeline);
-  console.log('[组合测试] 工具 Hook 轨迹:', toolTimeline);
-  console.log('[组合测试] hook_probe 记录内容:', notedMessages);
 
   expect.toBeGreaterThanOrEqual(templateCounters.pre, 2);
   expect.toBeGreaterThanOrEqual(templateCounters.post, 2);

@@ -5,10 +5,6 @@ import { IntegrationHarness } from '../../helpers/integration-harness';
 const runner = new TestRunner('集成测试 - Todo 事件流');
 
 runner.test('Todo 多轮更新触发事件', async () => {
-  console.log('\n[Todo事件测试] 测试目标:');
-  console.log('  1) Todo 增删改会触发 todo_changed');
-  console.log('  2) reminder 周期触发 todo_reminder');
-
   const harness = await IntegrationHarness.create({
     customTemplate: {
       id: 'integration-todo-events',

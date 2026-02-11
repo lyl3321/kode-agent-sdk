@@ -198,15 +198,12 @@ runner.test('交错思维链：推理与工具调用交错', async () => {
   for (const provider of PROVIDERS) {
     const env = loadProviderEnv(provider);
     if (!env.ok) {
-      console.log(`[skip] ${provider}: ${env.reason}`);
       continue;
     }
     if (!env.config?.model) {
-      console.log(`[skip] ${provider}: missing ${provider.toUpperCase()}_MODEL_ID`);
       continue;
     }
     if (env.config.enableIntertwined === false) {
-      console.log(`[skip] ${provider}: interleaved disabled by env flag`);
       continue;
     }
 
@@ -244,7 +241,7 @@ runner.test('交错思维链：推理与工具调用交错', async () => {
             const event = envelope.event as any;
             progressEvents.push(event);
             if (['think_chunk_start', 'think_chunk_end', 'tool:start', 'tool:end', 'done'].includes(event.type)) {
-              console.log(`[progress][${provider}] ${formatProgressEvent(event)}`);
+              // progress event tracked
             }
             if (envelope.event.type === 'done') {
               break;
@@ -257,14 +254,12 @@ runner.test('交错思维链：推理与工具调用交错', async () => {
 
         // 提取事件序列
         const sequence = extractProgressSequence(progressEvents);
-        console.log(`[${provider}] Event sequence: ${sequenceSummary(sequence)}`);
 
         // 检查工具调用
         const toolStartEvents = progressEvents.filter(e => e.type === 'tool:start');
         const hasMultipleTools = toolStartEvents.length >= 2;
 
         if (!hasMultipleTools) {
-          console.log(`[${provider}] Only ${toolStartEvents.length} tool call(s), need at least 2 for interleaving`);
           await cleanup();
           if (attempt < maxAttempts) {
             await delay(1000);
@@ -278,28 +273,16 @@ runner.test('交错思维链：推理与工具调用交错', async () => {
         const hasTools = sequence.some(s => s === 'tool_start');
 
         if (!hasThinking) {
-          console.log(`[${provider}] ⚠️  No thinking blocks detected (model behavior issue, not SDK issue)`);
-          console.log(`[${provider}] Verifying SDK can handle tool calls without thinking...`);
-
           // 即使没有 thinking，也要验证 SDK 能正常处理工具调用
           expect.toBeTruthy(hasTools, `[${provider}] No tool calls`);
           expect.toBeTruthy(toolStartEvents.length >= 2, `[${provider}] Need multiple tool calls`);
-
-          console.log(`[${provider}] ✅ SDK handled ${toolStartEvents.length} tool calls correctly`);
-          console.log(`[${provider}]    Note: Extended thinking not used by model (try different prompt or temperature)`);
         } else {
           // 如果有 thinking，验证交错模式
           const hasInterleaving = checkInterleavingPattern(sequence);
 
           if (!hasInterleaving) {
-            console.log(`[${provider}] ⚠️  Has thinking but no interleaving pattern`);
-            console.log(`[${provider}] Sequence: ${sequenceSummary(sequence)}`);
+            // Has thinking but no interleaving pattern
           }
-
-          console.log(`[${provider}] ✅ Interleaved thinking + tools detected`);
-          console.log(`[${provider}]    - thinking blocks: ${sequence.filter(s => s === 'think').length}`);
-          console.log(`[${provider}]    - tool calls: ${toolStartEvents.length}`);
-          console.log(`[${provider}]    - interleaving: ${hasInterleaving ? 'yes' : 'partial'}`);
         }
 
         // 验证消息存储
@@ -318,7 +301,6 @@ runner.test('交错思维链：推理与工具调用交错', async () => {
       } catch (error: any) {
         await cleanup();
         if (attempt < maxAttempts && shouldRetry(error)) {
-          console.log(`[retry][${provider}] Attempt ${attempt} failed, retrying after delay...`);
           await delay(1000 * attempt);
           continue;
         }

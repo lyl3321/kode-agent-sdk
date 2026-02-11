@@ -52,8 +52,8 @@ export class IntegrationHarness {
     private readonly storeDir?: string
   ) {}
 
-  log(message: string) {
-    console.log(message);
+  log(_message: string) {
+    // silent by default; enable for debugging specific tests
   }
 
   async chatStep(opts: ChatStepOptions) {

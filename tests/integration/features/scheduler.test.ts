@@ -9,11 +9,6 @@ import { wait, collectEvents } from '../../helpers/setup';
 const runner = new TestRunner('集成测试 - Scheduler 与监控');
 
 runner.test('Scheduler 触发提醒并捕获文件监控事件', async () => {
-  console.log('\n[Scheduler测试] 场景目标:');
-  console.log('  1) 调度器按步数发送提醒并驱动 reminder 消息');
-  console.log('  2) 监听 file_changed 与 todo_reminder 事件');
-  console.log('  3) 验证 fs_* 工具写入后事件流一致');
-
   const harness = await IntegrationHarness.create({
     customTemplate: {
       id: 'scheduler-watch',

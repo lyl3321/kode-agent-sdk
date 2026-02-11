@@ -14,6 +14,7 @@ export interface TestResult {
     name: string;
     error: Error;
   }>;
+  output: string;
 }
 
 /**
@@ -27,9 +28,14 @@ export class TestRunner {
   private beforeEachHooks: Array<() => Promise<void> | void> = [];
   private afterEachHooks: Array<() => Promise<void> | void> = [];
   private skipped: Array<string> = [];
+  private lines: string[] = [];
 
   constructor(suiteName: string) {
     this.suiteName = suiteName;
+  }
+
+  private out(msg: string): void {
+    this.lines.push(msg);
   }
 
   /**
@@ -69,9 +75,10 @@ export class TestRunner {
    * 运行所有测试
    */
   async run(): Promise<TestResult> {
-    console.log(`\n${'='.repeat(70)}`);
-    console.log(`${this.suiteName}`);
-    console.log(`${'='.repeat(70)}\n`);
+    this.lines = [];
+    this.out(`\n${'='.repeat(70)}`);
+    this.out(`${this.suiteName}`);
+    this.out(`${'='.repeat(70)}\n`);
 
     let passed = 0;
     let failed = 0;
@@ -79,7 +86,7 @@ export class TestRunner {
 
     if (this.skipped.length > 0) {
       for (const name of this.skipped) {
-        console.log(`  • ${name}... ↷ 跳过`);
+        this.out(`  • ${name}... ↷ 跳过`);
       }
     }
 
@@ -92,16 +99,15 @@ export class TestRunner {
         await hook();
       }
 
-      process.stdout.write(`  • ${name}... `);
       try {
         const start = Date.now();
         await fn();
         const duration = Date.now() - start;
-        console.log(`✓ (${duration}ms)`);
+        this.out(`  • ${name}... ✓ (${duration}ms)`);
         passed++;
       } catch (error: any) {
-        console.log('✗');
-        console.error(`    ${error.message}`);
+        this.out(`  • ${name}... ✗`);
+        this.out(`    ${error.message}`);
         failures.push({ name, error });
         failed++;
       }
@@ -115,9 +121,9 @@ export class TestRunner {
       await hook();
     }
 
-    console.log(`\n  总计: ${passed} 通过, ${failed} 失败\n`);
+    this.out(`\n  总计: ${passed} 通过, ${failed} 失败\n`);
 
-    return { passed, failed, failures };
+    return { passed, failed, failures, output: this.lines.join('\n') };
   }
 }
 
@@ -261,4 +267,25 @@ export async function concurrent<T>(
   fns: Array<() => Promise<T>>
 ): Promise<T[]> {
   return Promise.all(fns.map(fn => fn()));
+}
+
+/**
+ * 带并发度限制的任务执行器
+ */
+export async function runWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  limit: number
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < tasks.length) {
+      const i = nextIndex++;
+      results[i] = await tasks[i]();
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, tasks.length) }, () => worker())
+  );
+  return results;
 }

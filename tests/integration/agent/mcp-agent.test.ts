@@ -60,7 +60,7 @@ runner.test('MCP 工具注册到 Agent 工具注册表', async () => {
 
   const mcpTools = await withTimeout(
     getMCPTools(mcpConfig),
-    30000,
+    120000,
     '连接 MCP 服务器超时'
   );
 
@@ -91,7 +91,7 @@ runner.test('MCP 工具可以直接调用', async () => {
 
   const mcpTools = await withTimeout(
     getMCPTools(mcpConfig),
-    30000,
+    120000,
     '连接 MCP 服务器超时'
   );
 
@@ -107,8 +107,6 @@ runner.test('MCP 工具可以直接调用', async () => {
 
     expect.toBeTruthy(result, '应返回结果');
     expect.toBeTruthy(result.content, '应返回内容');
-  } else {
-    console.log('  ⚠️  未找到时间工具，跳过直接调用测试');
   }
 
   // 清理

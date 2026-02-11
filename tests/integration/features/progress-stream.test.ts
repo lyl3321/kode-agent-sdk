@@ -8,10 +8,6 @@ import { IntegrationHarness } from '../../helpers/integration-harness';
 const runner = new TestRunner('集成测试 - Progress 事件');
 
 runner.test('工具执行产生 tool:start / tool:end 事件', async () => {
-  console.log('\n[Progress事件测试] 测试目标:');
-  console.log('  1) 验证文件写入工具会触发 tool:start / tool:end');
-  console.log('  2) 确认实际文件内容被修改');
-
   const harness = await IntegrationHarness.create({
     customTemplate: {
       id: 'integration-progress-events',
