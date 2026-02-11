@@ -673,7 +673,8 @@ export class JSONStore implements Store {
     const fs = require('fs').promises;
     try {
       await fs.access(this.getAgentDir(agentId));
-      return true;
+      const info = await this.loadInfo(agentId);
+      return !!(info && info.metadata);
     } catch {
       return false;
     }
